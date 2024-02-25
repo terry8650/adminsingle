@@ -1,0 +1,174 @@
+
+
+<style>
+/* 这段样式只是用于演示 */
+.layui-layer-page .layui-layer-content {
+    background-color: #fafafa!important;
+    color: #5f5f5f!important;
+  }
+</style>
+
+<div class="layui-fluid layui-bg-gray" style="padding:0;">
+  <div class="layui-panel">
+    <script type="text/html" template lay-url="{{layui.setter.apiurl+'/sys/role/nodes'}}" lay-data="{id:{{d.params}} }" lay-done="layui.data.tree(d)">
+    <div style="padding:10px;">
+       <table id="authTree" ></table>
+       <div class="layui-row" style="float:right;margin-top: 30px;"><span class="layui-btn" lay-fun='save_small_auth'>保存</span></div>
+        
+       
+
+    </div>
+    </script>
+    <script type="text/html" id="tbSel">
+      <select data-id="{{d.id}}" lay-filter="demoSel">
+        
+          {{# var theAuth=d.smallAuth.split(',');
+              layui.each(theAuth,function(i,v){ }}
+          <option value="{{v}}" {{d.auth==v?'selected':''}}>{{v}}</option>
+
+         {{#  }) }} 
+        
+      </select>
+   </script>
+   <script type="text/html" id="uptbBar">
+      <a class="layui-btn layui-btn-primary layui-btn-xs" lay-event="edit">修改</a>
+      <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del">删除</a>
+   </script>
+  </div> 
+</div>
+
+<script>
+layui.data.tree=function(d){
+  layui.use(['admin','treeTable'], function(){
+    var $ = layui.$
+    ,admin = layui.admin
+    ,element = layui.element
+    ,treeTable=layui.treeTable
+    ,router = layui.router()
+    ,tree=[],list=JSON.parse(JSON.stringify(layui.cache.menulist));
+
+    layui.each(list,function(i,v){
+     
+      layui.each(d.data.auth,function(i1,v1){
+        if (v1[1]==v.id) {
+          v.auth=v1[2];
+          v.open=true;
+          tree.push(v);
+       
+        }
+      })
+
+    })
+    var newAuth=JSON.parse(JSON.stringify(d.data.auth));
+  
+
+     var insauth = treeTable.render({
+        elem: '#authTree',
+        data: tree,
+        type:'post',
+        // toolbar: '#menutoolbar',
+        height: 'full-200',
+        headers:{Authorization:layui.data(layui.setter.tableName).Authorization},
+        tree: {
+            iconIndex: 1,
+            isPidData: true,
+            idName: 'id',
+            pidName: 'pid'
+        },
+       
+        cols: [
+            
+            [
+                {type: 'numbers',title:'序号',width:70},
+              
+                {field: 'title', title: '菜单名称', minWidth: 100},
+                 {field: 'name',title: '路径名称', align: 'center', width: 210},
+                 { title: '类型',width:100,templet:function(d){
+                    return d.type==1?'菜单':'接口';
+                 }},
+                 {field: 'auth', title: 'auth', templet: '#tbSel', singleLine: false},
+                {field: 'jump', title: '路径'},
+               
+             
+                {align: 'center', toolbar: '#uptbBar', title: '操作', width: 120}
+            ]
+        ],
+        style: 'margin-top:0;'
+        ,done:function(r){
+         
+            
+      },
+     
+    });
+    treeTable.on('tool(authTree)', function(obj){
+     var event = obj.event,data=obj.data;
+      if (event === 'del') {
+      
+        if (typeof data.children!="undefined") {
+          layer.msg('有子节点，不能删除');
+        }else{
+          admin.req({
+            url:layui.setter.apiurl+'/sys/role/del_one_rule',
+            type:'delete',
+            data:{auth:['r_'+d.params,data.id,data.auth]},
+            done:function(r){
+              layer.msg(r.msg);
+            }
+          })
+
+        }
+        
+ 
+      }else if (event==='edit') {
+        var old=''
+        layui.each(d.data.auth,function(i,v){
+          if (v[1]==data.id) {
+              old=v[2];
+          }
+        })
+        admin.req({
+          url:layui.setter.apiurl+'/sys/role/update_single_rule',
+          type:'put',
+          data:{oldAuth:['r_'+d.params,data.id,old],newAuth:['r_'+d.params,data.id,data.auth]},
+          done:function(r){
+            layer.msg(r.msg);
+          }
+        })
+      }
+    });
+    layui.form.on('select(demoSel)', function (data) {
+        var id = $(data.elem).data('id');
+        insauth.update(id, {auth: data.value});
+        layui.each(newAuth,function(i,v){
+          if (v[1]==id) {
+            v[2]=data.value;
+          }
+        })
+
+      
+      
+    });
+     layui.util.on('lay-fun',{
+        save_small_auth:function(o){
+
+          admin.req({
+            url:layui.setter.apiurl+'/sys/role/update_old_rule',
+            type:'put',
+            data:{id:d.params,newAuth:newAuth},
+            done:function(r){
+              layer.msg(r.msg,{time:1000},function(){
+                if(r.msg=='ok'){
+                  layer.closeAll();
+                }
+              });
+            }
+          })
+        }
+     })
+
+    
+  });
+
+}
+
+</script>

@@ -1,0 +1,193 @@
+
+
+<style>
+/* 这段样式只是用于演示 */
+.layui-layer-page .layui-layer-content {
+    background-color: #fafafa!important;
+    color: #5f5f5f!important;
+  }
+</style>
+
+<div class="layui-fluid layui-bg-gray" style="padding:0;">
+  <div class="layui-panel">
+    <div style="padding:10px;">
+      <script type="text/html" template lay-done="layui.data.menuedit(d)">
+      <form class="layui-form layui-form-pane" lay-filter="menuedit" action="">
+        <input type="hidden" name="id">
+        <div id="addmenutree"></div>
+        <div class="layui-form-item">
+          <label class="layui-form-label">菜单名称</label>
+          <div class="layui-input-block">
+            <input type="text" name="title" autocomplete="off" lay-verify="required" lay-reqtext="菜单名是必填项，岂能为空？" placeholder="" class="layui-input">
+          </div>
+        </div>
+        <div class="layui-form-item">
+          <label class="layui-form-label">节点类型</label>
+          <div class="layui-input-block">
+            <select name="type" lay-verify="required">
+             
+              <option value="1">菜单</option>
+              <option value="2">接口</option>
+            
+            </select>
+          </div>
+        </div>
+        <div class="layui-form-item">
+          <label class="layui-form-label">路径名称</label>
+          <div class="layui-input-block">
+            <input type="text" name="name" autocomplete="off"  placeholder="" class="layui-input">
+          </div>
+        </div>
+        <div class="layui-form-item">
+          <label class="layui-form-label">jump地址</label>
+          <div class="layui-input-block">
+            <input type="text" name="jump" autocomplete="off" placeholder="" class="layui-input">
+          </div>
+        </div>
+        <div class="layui-form-item">
+          <label class="layui-form-label">条件</label>
+          <div class="layui-input-block">
+            <input type="text" name="condition" autocomplete="off" placeholder="" class="layui-input">
+          </div>
+        </div>
+        <div id="smallAuth"></div>
+
+        <div class="layui-form-item">
+          <label class="layui-form-label">外链</label>
+          <div class="layui-input-block">
+            <input type="text" name="url" autocomplete="off" placeholder="" class="layui-input">
+          </div>
+        </div>
+        <div class="layui-form-item">
+          <label class="layui-form-label">icon</label>
+          <div class="layui-input-block">
+            <input type="text" name="icon" autocomplete="off" placeholder="" class="layui-input">
+          </div>
+        </div>
+       
+        <div class="layui-form-item layui-form-text">
+          <label class="layui-form-label">备注</label>
+          <div class="layui-input-block">
+            <textarea placeholder="请输入内容" name="remark" class="layui-textarea"></textarea>
+          </div>
+        </div>
+        <div class="layui-form-item" style="float:right;margin-top:30px ;">
+          <button class="layui-btn" lay-submit="" lay-filter="editmenu">保存</button>
+        </div>
+      </form>
+      </script>
+    </div>
+  </div> 
+</div>
+
+<script>
+layui.data.menuedit=function(d){
+  layui.use(['admin','xmSelect'], function(){
+    var $ = layui.$
+    ,admin = layui.admin
+    ,xmSelect=layui.xmSelect
+    ,element = layui.element
+    ,form=layui.form
+    ,router = layui.router();
+  
+    var menueditselect = xmSelect.render({
+      el: '#addmenutree', 
+      radio: true,
+      tips: '选择上级菜单',
+      name:'pid',
+      prop: {
+        name: 'title',
+        value: 'id',
+      },
+      clickClose: true,
+      model: {
+        icon: 'hidden',
+        label: {
+          type: 'text'
+        }
+      },
+      clickClose: true,
+      //树
+      tree: {
+        show: true,
+        expandedKeys: true,
+        clickExpand: false,
+        //非严格模式
+        strict: false,
+        //默认展开节点
+        expandedKeys: true,
+      },
+      data: layui.cache.menutree
+    });
+     var sauth = xmSelect.render({
+      el: '#smallAuth', 
+      filterable: true,
+      name:'smallAuth',
+      tips: '设置细化权限',
+      create: function(val, arr){
+        if(arr.length === 0){
+          return {
+            name: '新权限' + val,
+            value: val
+          }
+        }
+      },
+      data:function(){
+        var tem= [
+            {name: 'd', value: 'd', disabled: true, selected: true},
+            {name: 'admin', value: 'admin'},
+            {name: 'edit', value: 'edit'},
+            {name: 'read', value: 'read'},
+          ];
+        layui.each(d.params.smallAuth.split(','),function(i,v){
+
+          tem.push({name:v,value:v});
+        })
+       
+        return tem.reduce((pre, cur) => {
+            if (!pre.find(item => item.name === cur.name)) {
+                pre.push(cur)
+            }
+            return pre
+        }, [])
+
+
+      }
+    })
+     
+     form.val('menuedit',d.params);
+     menueditselect.setValue([d.params.pid]);
+     sauth.setValue(d.params.smallAuth.split(','));
+     form.render();
+     form.on('submit(editmenu)', function(data){
+
+        admin.req({
+          url:layui.setter.apiurl+'/sys/menu/update'
+          ,type:'put'
+          ,data:data.field
+          ,done:function(r){
+            if (r.msg=='ok') {
+              layer.msg('更新成功',{time:1000},function(){
+               
+                delete layui.cache.menutree;
+               
+                if (typeof layui.cache.menulist!="undefined") {
+                  delete layui.cache.menulist;
+                }
+                admin.events.refresh();
+              })
+            }
+            
+          }
+        })
+        return false;
+      });
+    
+
+
+    
+  });
+
+}
+
+</script>

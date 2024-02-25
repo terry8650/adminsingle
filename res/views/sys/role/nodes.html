@@ -1,0 +1,89 @@
+
+
+<style>
+/* 这段样式只是用于演示 */
+.layui-layer-page .layui-layer-content {
+    background-color: #fafafa!important;
+    color: #5f5f5f!important;
+  }
+</style>
+
+<div class="layui-fluid layui-bg-gray" style="padding:0;">
+  <div class="layui-panel">
+    <script type="text/html" template lay-url="{{layui.setter.apiurl+'/sys/role/nodes'}}" lay-data="{id:{{d.params}} }" lay-done="layui.data.tree(d)">
+    <div style="padding:10px;">
+      <div id="nodestree"></div>
+
+    </div>
+    
+  </script>
+  </div> 
+  <div class="layui-row">
+    <span id="save_auth" class="layui-btn" style="float:right;margin-top:10px ;">保存</span>
+  </div>
+</div>
+
+<script>
+layui.data.tree=function(d){
+  layui.use(['admin','eleTree'], function(){
+    var $ = layui.$
+    ,admin = layui.admin
+    ,element = layui.element
+    ,eleTree=layui.eleTree
+    ,router = layui.router()
+    ,eledata=[],list=JSON.parse(JSON.stringify(layui.cache.menulist));
+    
+    layui.each(list,function(i,v){
+      v.checked=false;
+      eledata[i]=v;
+      layui.each(d.data.auth,function(i1,v1){
+        if (v1[1]==v.id) {
+          eledata[i].checked=true;
+        }
+      })
+
+    })
+
+   var ele = eleTree({
+      el: '#nodestree',
+      data: admin.events.totree(eledata),
+      defaultExpandAll:true,
+      isDefaultChangePstatus:true,
+      
+      request:{
+        name:'title',
+         pid: "pid",
+
+      },
+      showCheckbox: true,
+      highlightCurrent: true,
+
+      
+    })
+
+  
+    $("#save_auth").click(function(){
+      var data=ele.getChecked(false,true,true),nid=[];
+      layui.each(data,function(i,v){
+          nid[i]=v.id;
+      })
+      admin.req({
+        url:layui.setter.apiurl+'/sys/role/save_nodes'
+        ,type:'post'
+        ,data:{id:d.params,nodes:nid}
+        ,done:function(r){
+          layer.msg(r.msg,{time:1000},function(){
+            if (r.msg=='ok') {
+              layer.closeAll();
+            }
+          });
+        }
+      })
+    })
+
+    
+  });
+
+}
+
+</script>

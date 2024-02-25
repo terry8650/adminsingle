@@ -1,0 +1,74 @@
+
+<title>vditor</title>
+
+<div class="layui-card layadmin-header">
+  <div class="layui-breadcrumb" lay-filter="breadcrumb">
+    <a lay-href="">主页</a>
+    <a><cite>vditor</cite></a>
+ 
+  </div>
+</div>
+
+<style>
+/* 这段样式只是用于演示 */
+
+
+
+</style>
+
+<div class="layui-fluid">
+  <div class="layui-row layui-col-space15">
+    <div class="layui-col-md12">
+      <div class="layui-card">
+        <div class="layui-card-header">YYY</div>
+        <div class="layui-card-body layui-text">
+          <div id="vditor"></div>
+          
+          
+        </div>
+      </div>
+    </div>
+    <div class="layui-col-md12">
+      <div class="layui-card">
+        <div class="layui-card-header">ZZZ</div>
+        <div class="layui-card-body">
+          
+          
+          
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+layui.use(['admin','vditor'], function(){
+  var $ = layui.$
+  ,admin = layui.admin
+  ,element = layui.element,vditor=layui.vditor
+  ,router = layui.router();
+new vditor('vditor', {
+ 
+  cdn:layui.cache.base+'/vditor',
+   // cdn:'https://unpkg.com/vditor@3.9.2',
+  cache: {
+    enable: false,
+  },
+  value: '可选模式：sv, ir, wysiwyg',
+})
+element.render();
+admin.req({
+  url:layui.setter.apiurl+'/pub/test'
+  ,type:'post'
+  ,dataType: 'json'
+  ,contentType: "application/json"
+  ,data:JSON.stringify([{"name":'appversion'}])
+  ,done:function(r){
+    console.log(r);
+  }
+})
+
+
+  
+});
+</script>

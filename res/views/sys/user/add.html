@@ -1,0 +1,153 @@
+
+
+<style>
+/* 这段样式只是用于演示 */
+.layui-layer-page .layui-layer-content {
+    background-color: #fafafa!important;
+    color: #5f5f5f!important;
+  }
+</style>
+
+<div class="layui-fluid layui-bg-gray" style="padding:0;">
+  <div class="layui-panel">
+    <div style="padding:10px;">
+      <form class="layui-form layui-form-pane" action="">
+        <div class="layui-form-item">
+          <label class="layui-form-label">用户名称</label>
+          <div class="layui-input-block">
+            <input type="text" name="userName" autocomplete="off" lay-verify="required" lay-reqtext="用户名是必填项，岂能为空？" placeholder="" class="layui-input">
+          </div>
+        </div>
+        <div class="layui-form-item">
+          <label class="layui-form-label">用户昵称</label>
+          <div class="layui-input-block">
+            <input type="text" name="userNickname" autocomplete="off" lay-verify="required" placeholder="" class="layui-input">
+          </div>
+        </div>
+        <div class="layui-form-item">
+          <label class="layui-form-label">邮箱</label>
+          <div class="layui-input-block">
+            <input type="text" name="userEmail" autocomplete="off" placeholder="" class="layui-input">
+          </div>
+        </div>
+        <div class="layui-form-item">
+          <label class="layui-form-label">电话</label>
+          <div class="layui-input-block">
+            <input type="number" name="mobile" autocomplete="off" placeholder="" class="layui-input">
+          </div>
+        </div>
+        <div class="layui-form-item" pane="">
+          <label class="layui-form-label">性别</label>
+          <div class="layui-input-block">
+            <input type="radio" name="sex" value="1" title="男" checked="">
+            <input type="radio" name="sex" value="0" title="女">
+            
+          </div>
+        </div>
+        <div class="layui-form-item" pane="">
+          <label class="layui-form-label">状态</label>
+          <div class="layui-input-block">
+            <input type="radio" name="userStatus" value="1" title="正常" checked>
+            <input type="radio" name="userStatus" value="0" title="禁用">
+            <input type="radio" name="userStatus" value="2" title="未认证">
+            
+          </div>
+        </div>
+        <div id="userdept"></div>
+        <div id="userpost"></div>
+        <div id="userrole"></div>
+        <div class="layui-form-item layui-form-text">
+          <label class="layui-form-label">备注</label>
+          <div class="layui-input-block">
+            <textarea placeholder="请输入内容" name="remark" class="layui-textarea"></textarea>
+          </div>
+        </div>
+        <div class="layui-form-item">
+          <button class="layui-btn" lay-submit="" lay-filter="adduser">保存</button>
+        </div>
+      </form>
+    </div>
+  </div> 
+</div>
+
+<script>
+layui.use(['admin','xmSelect'], function(){
+  var $ = layui.$
+  ,admin = layui.admin
+  ,element = layui.element
+  ,form=layui.form,table=layui.table
+  ,xmSelect=layui.xmSelect
+  ,router = layui.router();
+  
+   var userdept = xmSelect.render({
+    el: '#userdept', 
+    radio: true,
+    tips: '选择所在部门',
+    name:'deptId',
+    prop: {
+      name: 'name',
+      value: 'id',
+    },
+    clickClose: true,
+    model: {
+      icon: 'hidden',
+      label: {
+        type: 'text'
+      }
+    },
+    clickClose: true,
+    //树
+    tree: {
+      show: true,
+      clickExpand: false,
+      //非严格模式
+      strict: false,
+      //默认展开节点
+      expandedKeys: true,
+    },
+    data: layui.cache.deptree
+  });
+  var userpost = xmSelect.render({
+    el: '#userpost', 
+    tips: '选择职位',
+     prop: {
+      name: 'postName',
+      value: 'postId',
+    },
+    name:"postId",
+    radio: true,
+    clickClose: true,
+    data: layui.cache.postlist
+  });
+  var userrole = xmSelect.render({
+    el: '#userrole', 
+    tips: '选择角色',
+     prop: {
+      name: 'name',
+      value: 'id',
+    },
+    name:'roleIds',
+    data:layui.cache.rolelist
+  })
+  
+  userrole.setValue([ ]);userpost.setValue([ ]);userdept.setValue([ ])
+
+  form.render();
+  form.on('submit(adduser)', function(data){
+    data.field.roleIds=userrole.getValue('value')
+      admin.req({
+        url:layui.setter.apiurl+'/sys/user/add'
+        ,type:'post'
+        ,data:data.field
+        ,done:function(r){
+          layer.msg('添加成功',{time:1000},function(){
+            layui.admin.events.refresh();
+          })
+        }
+      })
+    return false;
+  });
+
+  
+});
+</script>

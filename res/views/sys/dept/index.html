@@ -1,0 +1,282 @@
+
+<title>部门管理</title>
+
+<div class="layui-card layadmin-header">
+  <div class="layui-breadcrumb" lay-filter="breadcrumb">
+    <a lay-href="">主页</a>
+    <a><cite>部门管理</cite></a>
+   
+  </div>
+</div>
+
+<style>
+/* 这段样式只是用于演示 */
+.dept-btn .layui-btn{height: 31px;line-height: 31px;margin-top: 8px;margin-right: 20px;}
+
+</style>
+
+<div class="layui-fluid">
+  <div class="layui-row layui-col-space15">
+    <div class="layui-col-md3">
+      <div class="layui-card">
+        <div class="layui-card-header">
+          <div class="layui-btn-container dept-btn" style="text-align:center;">
+            <input type="hidden" id="curr_id" value="100">
+            <span  class="layui-btn" lay-fun="add_dept">添加</span>
+            <span class="layui-btn" lay-fun="edit_dept">编辑</span>
+            <span  class="layui-btn" lay-fun="del_dept">删除</span>
+          </div>
+        </div>
+        <div class="layui-card-body">
+          <div id="depttree"></div>
+          
+          
+          
+        </div>
+      </div>
+    </div>
+    <div class="layui-col-md9">
+      <div class="layui-card">
+        <div class="layui-card-header">用户列表</div>
+        <div class="layui-card-body">
+          <table class="layui-hide" id="deptusertable" lay-filter="deptlfuser"></table>
+          <script type="text/html" id="deptusertoolbar">
+           <form class="layui-form">
+            <div class="layui-row layui-col-space5" >
+              <div class="layui-col-md3">
+                <select name="status" lay-verify="">
+                  <option value="">状态选择</option>
+                
+                  <option value="0">停用</option>
+                  <option value="1">启用</option>
+                </select>
+              </div>
+              <div  class="layui-col-md3">
+                <input type="text" name="userName" placeholder="名称" autocomplete="off" class="layui-input">
+              </div>
+            
+              <div  class="layui-col-md3">
+                <button  lay-submit class="layui-btn"  lay-filter="deptsearchuser">
+                  <i class="layui-icon">&#xe615;</i>查询
+                </button>
+                <span  class="layui-btn" lay-event="add">
+                  <i class="layui-icon">&#xe608;</i>新建
+                </span>
+              </div>
+              
+
+            
+            </div>
+           </form>
+
+
+          </script>
+          <script type="text/html" id="userbar">
+            <a class="layui-btn layui-btn-primary layui-btn-xs" lay-event="edit">编辑</a>
+            <a class="layui-btn layui-btn-xs" lay-event="del">删除 </a>
+          </script>
+          
+          
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+layui.use(['admin','eleTree'], function(){
+  var $ = layui.$
+  ,admin = layui.admin
+  ,element = layui.element
+  ,eleTree=layui.eleTree
+  ,util=layui.util,table=layui.table,form=layui.form
+  ,view=layui.view
+  ,router = layui.router(),curr_data={},
+  ele=eleTree({
+    el: '#depttree'
+    ,data:layui.cache.deptree?layui.cache.deptree:[]
+    ,defaultExpandAll:true
+    ,expandOnClickNode:false
+    ,rightMenuList: [  {name: "添加", value: "add"}, {name: "编辑此项", value: "edi"}, {name: "删掉", value: "del"},]
+    ,request:{
+      name:'name',
+    }
+
+    ,highlightCurrent: true
+  
+  });
+  if (typeof layui.cache.deptree=="undefined") {
+    admin.req({
+      url:layui.setter.apiurl+'/sys/user/get_dept_post_role'
+      ,type:'get'
+      ,done:function(r){
+        layui.cache.deptree=admin.events.totree(r.data.dept);
+        layui.cache.rolelist=r.data.role;
+        layui.cache.postlist=r.data.post;
+        ele.reload({
+          data:layui.cache.deptree
+        });
+      }
+    })
+  }
+  function dept_option(tit,path,d){
+    admin.popup({
+      id: 'dept-option'
+      ,title:tit
+      ,area:admin.screen() < 2 ? ['100%', '100%'] : ['800px', '600px']
+      ,success: function(l,i){
+        view(this.id).render(path,d);
+      }
+    })
+
+  }
+  function del_dept(id){
+   layer.confirm('确定删除吗？', function(index){
+      
+      admin.req({
+        url:layui.setter.apiurl+'/sys/dept/delete'
+        ,type:'delete'
+        ,data:{id:id}
+        ,done:function(r){
+          layer.msg(r.msg);
+          if(r.msg=='ok'){
+            if (typeof layui.cache.deptree!="undefined") {
+              delete layui.cache.deptree;
+            }
+           
+            admin.events.refresh();
+          }
+        }
+      })
+     
+    });
+
+  }
+
+  ele.on('click',function(d){
+    $("#curr_id").val(d.data.id)
+    curr_data=d.data;
+    table.reloadData('deptusertable',{where:{deptId:d.data.id},page:{curr:1}});
+  })
+  ele.on('custom_edi',function(d){
+    dept_option('编辑部门','/sys/dept/edit',d.data);
+    d.load();
+  })
+  ele.on('custom_add',function(d){
+    dept_option('添加子部门','/sys/dept/add',d.data.id);
+   
+    d.load();
+    
+  })
+  ele.on('custom_del',function(d){
+    del_dept(d.data.id)
+    d.load();
+  })
+
+  util.on('lay-fun',{
+    add_dept:function(){
+
+      dept_option('添加子部门','/sys/dept/add', $("#curr_id").val());
+       
+    }
+    ,edit_dept:function(){
+      if(typeof curr_data=="undefined"){
+        layer.msg('请选择编辑的部门');
+        return;
+      }
+      dept_option('编辑部门','/sys/dept/edit',curr_data);
+    }
+    ,del_dept:function(){
+      if(typeof curr_data=="undefined"){
+        layer.msg('请选择要删除的部门');
+        return;
+      }
+      del_dept(curr_data.id)
+    }
+  })
+   table.render({
+    elem: '#deptusertable'
+    ,height: 420
+    ,url: layui.setter.apiurl+'/sys/user/list' //数据接口（此处为静态数据，仅作演示）
+    ,title: '用户表'
+    ,page: true //开启分页
+    ,toolbar: '#deptusertoolbar'
+    
+    ,cols: [[ //表头
+      {type: 'checkbox'}
+      ,{field: 'id', title: 'ID' }
+    
+      ,{field: 'userName', title: '用户名'}
+      ,{field: 'userNickname', title: '昵称'}
+      ,{title: '状态', width:80,templet:function(d){
+        return d.userStatus==1?'正常':'停用'
+      }}
+      ,{field: 'remark', title: '备注'}
+      ,{title: '操作', width: 150, align:'center', toolbar: '#userbar'}
+
+      
+    ]]
+  });
+   form.on('submit(deptsearchuser)',function(data){
+    
+    table.reloadData('deptusertable',{where:data.field,page:{curr:1}});
+
+    return false;
+  })
+  table.on('toolbar(deptlfuser)', function(obj){
+    var id = obj.config.id;
+    var checkStatus = table.checkStatus(id);
+    var othis = lay(this);
+    switch(obj.event){
+      case 'add':
+        // var data = checkStatus.data;
+        // layer.alert(layui.util.escape(JSON.stringify(data)));
+        admin.popup({
+          id: 'adduser'
+          ,title:'添加用户'
+          ,area:admin.screen() < 2 ? ['100%', '100%'] : ['800px', '600px']
+          ,success: function(l,i){
+            view(this.id).render('/sys/user/add');
+          }
+        })
+      break;
+    }
+  })
+  table.on('tool(deptlfuser)', function(obj){ // 注：test 是 table 原始标签的属性 lay-filter="对应的值"
+    var data = obj.data; //获得当前行数据
+    var layEvent = obj.event; //获得 lay-event 对应的值（也可以是表头的 event 参数对应的值）
+    var tr = obj.tr; //获得当前行 tr 的 DOM 对象（如果有的话）
+   
+    if(layEvent === 'del'){ //删除
+      layer.confirm('确定删除吗？', function(index){
+        
+        admin.req({
+          url:layui.setter.apiurl+'/sys/user/delete'
+          ,type:'delete'
+          ,data:{id:data.id}
+          ,done:function(r){
+            layer.msg(r.msg);
+            if(r.msg=='ok'){
+              table.reloadData('deptusertable',{page:{curr:1}});
+              layer.close(index);
+            }
+          }
+        })
+       
+      });
+    } else if(layEvent === 'edit'){ //编辑
+       admin.popup({
+        id: 'edituser'
+        ,title:'编辑用户'
+        ,area:admin.screen() < 2 ? ['100%', '100%'] : ['800px', '600px']
+        ,success: function(l,i){
+          view(this.id).render('/sys/user/edit',data);
+        }
+      })
+      
+    }
+  });
+
+  
+});
+</script>

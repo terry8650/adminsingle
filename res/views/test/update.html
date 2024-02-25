@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>test</title>
+</head>
+<body>
+<script>
+			UI.start();
+			
+			var wgtVer=null;
+			function plusReady(){
+			    // ......
+			    // 获取本地应用资源版本号
+			    plus.runtime.getProperty(plus.runtime.appid,function(inf){
+			        wgtVer=inf.version;
+			        console.log("当前应用版本："+wgtVer);
+			        //从服务器获取最新版本
+			        checkUpdate();
+			    });
+			}
+			if(window.plus){
+				console.log("浏览器无法执行这段代码");
+			    plusReady();
+			}else{
+				console   .log("浏览器无法执行这段代码111");
+			    document.addEventListener('plusready',plusReady,false);
+			}
+			
+			
+			// 检测更新
+			var checkUrl="http://192.168.40.55:8080/OPT_M/userAdmin/getVersion";
+			function checkUpdate(){
+			    plus.nativeUI.showWaiting("检测更新...");
+			    var xhr=new XMLHttpRequest();
+			    xhr.onreadystatechange=function(){
+			        switch(xhr.readyState){
+			            case 4:
+			            plus.nativeUI.closeWaiting();
+			            if(xhr.status==200){
+			                console.log("检测更新成功,获取到的版本号为:"+xhr.responseText);
+			                var newVer=xhr.responseText;
+			                if(wgtVer&&newVer&&(wgtVer!=newVer)){
+			                	console.log("获取资源文件路径");
+			                	getdownPath();
+			                    
+			                }else{
+			                    plus.nativeUI.alert("无新版本可更新！");
+			                }
+			            }else{
+			                console.log("检测更新失败！");
+			                plus.nativeUI.alert("检测更新失败！");
+			            }
+			            break;
+			            default:
+			            break;
+			        }
+			    }
+                xhr.timeout=5000;//超过5秒连接不上则断掉
+			    xhr.open('POST',checkUrl);
+			    xhr.send();
+			}
+			
+			//获取资源文件路径,其实就是将wgt文件放在tomcat的download文件夹下面,将这个绝对路径返回给前端,这样让前端直接进行下载,就ok了.
+			var new_version="";
+			var wgtUrlPath="http://192.168.40.55:8080/OPT_M/userAdmin/downloadPath";
+			function getdownPath(){
+				var xhr=new XMLHttpRequest();
+			    xhr.onreadystatechange=function(){
+			        switch(xhr.readyState){
+			            case 4:
+			            //plus.nativeUI.closeWaiting();
+			            if(xhr.status==200){
+			                console.log("获取下载路径成功");
+			                new_version=xhr.responseText;
+			                downWgt(new_version);  // 下载升级包
+			            }else{
+			                console.log("下载失败！");
+			                plus.nativeUI.alert("下载失败！");
+			            }
+			            break;
+			            default:
+			            break;
+			        }
+			    }
+			    xhr.open('GET',wgtUrlPath);
+			    xhr.send();
+			}
+			
+			//var wgtUrl="http://192.168.40.55:8080/OPT_M/userAdmin/downloadEntity";
+			
+			
+			
+				// 下载wgt文件
+			function downWgt(newVersion){
+				// 弹出对话框,询问是否更新最新版本,2018年10月22日11:21:25
+				plus.nativeUI.confirm("应用有新版本，是否立即下载更新？", function(event) {
+                        if(event.index == 1) {
+			                plus.nativeUI.showWaiting("下载最新文件中,请稍候...");
+						    plus.downloader.createDownload( newVersion, {filename:"_doc/update/"}, function(d,status){
+						        if ( status == 200 ) { 
+						        	 plus.nativeUI.closeWaiting();
+						        	 
+						            console.log("下载wgt成功："+d.filename);
+						          //alert("下载成功,文件名为:"+d.filename);
+						            
+						            installWgt(d.filename); // 安装wgt包
+						        } else {
+						            console.log("下载wgt失败！");
+						            plus.nativeUI.alert("下载wgt失败！");
+						        }
+			
+			                }).start();
+                        }
+                }, '提示', ['取消', '确认']);
+				
+			}
+			
+			// 更新应用资源
+			function installWgt(path){
+			
+			    plus.nativeUI.showWaiting("安装wgt文件...");
+			
+			    plus.runtime.install(path,{force: true},function(){
+			
+			        plus.nativeUI.closeWaiting();
+			
+			        console.log("安装wgt文件成功！");
+			
+			        plus.nativeUI.alert("应用资源更新完成！",function(){
+			
+			            plus.runtime.restart();
+			
+			        });
+			
+			    },function(e){
+			
+			        plus.nativeUI.closeWaiting();
+			
+			        console.log("安装wgt文件失败["+e.code+"]："+e.message);
+			
+			        plus.nativeUI.alert("安装wgt文件失败["+e.code+"]："+e.message);
+			
+			    });
+			
+			}
+			
+			
+			//上面是做从服务器下载更新文件的片段********************
+</script>
+</body>
+</html>

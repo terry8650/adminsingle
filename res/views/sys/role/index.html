@@ -1,0 +1,241 @@
+
+<title>角色管理</title>
+
+<div class="layui-card layadmin-header">
+  <div class="layui-breadcrumb" lay-filter="breadcrumb">
+    <a lay-href="">主页</a>
+    <a><cite>角色管理</cite></a>
+   
+  </div>
+</div>
+
+<style>
+/* 这段样式只是用于演示 */
+
+</style>
+
+<div class="layui-fluid">
+  <div class="layui-row layui-col-space15">
+    <div class="layui-col-md12">
+      <div class="layui-card">
+        <div class="layui-card-header">角色管理</div>
+        <div class="layui-card-body">
+          <table class="layui-hide" id="roletable" lay-filter="lfrole"></table>
+           <script type="text/html" id="roletoolbar">
+           <form class="layui-form">
+            <div class="layui-row layui-col-space5" >
+              <div class="layui-col-md3">
+                <select name="status" lay-verify="">
+                  <option value="">状态选择</option>
+                
+                  <option value="0">停用</option>
+                  <option value="1">启用</option>
+                </select>
+              </div>
+              <div  class="layui-col-md3">
+                <input type="text" name="name" placeholder="名称" autocomplete="off" class="layui-input">
+              </div>
+            
+              <div  class="layui-col-md3">
+                <button  lay-submit class="layui-btn"  lay-filter="searchrole">
+                  <i class="layui-icon">&#xe615;</i>查询
+                </button>
+                <span  class="layui-btn" lay-event="add">
+                  <i class="layui-icon">&#xe608;</i>新建
+                </span>
+              </div>
+              
+
+            
+            </div>
+           </form>
+
+
+          </script>
+          <script type="text/html" id="rolebar">
+            <a class="layui-btn layui-btn-primary layui-btn-xs" lay-event="auth">权限</a>
+            <a class="layui-btn layui-btn-xs" lay-event="more">更多 <i class="layui-icon layui-icon-down"></i></a>
+            <!-- <a class="layui-btn layui-btn-xs" lay-event="del">删除 </a> -->
+          </script>
+          
+          
+        </div>
+      </div>
+    </div>
+  
+  </div>
+</div>
+
+<script>
+layui.use(['admin'], function(){
+  var $ = layui.$
+  ,admin = layui.admin
+  ,element = layui.element
+  ,table=layui.table
+  ,dropdown = layui.dropdown
+  ,form=layui.form
+  ,view=layui.view
+  ,router = layui.router();
+    table.render({
+    elem: '#roletable'
+    ,height: 420
+    ,url: layui.setter.apiurl+'/sys/role/list'
+    ,title: '用户表'
+    ,page: true //开启分页
+    ,toolbar: '#roletoolbar'
+    
+    ,cols: [[ //表头
+      {type: 'checkbox'}
+      ,{field: 'id', title: 'ID',width:80 }
+      ,{field: 'name', title: '名称'}
+     
+      ,{field: 'status', title: '状态', width:80,templet:function(d){
+        return d.status==1?'正常':'停用'
+      }}
+      ,{field: 'remark', title: '备注'}
+      ,{title: '操作', width: 150, align:'center', toolbar: '#rolebar'}
+
+      
+    ]]
+  });
+  if (typeof layui.cache.menulist=="undefined") {
+    admin.req({
+      url:layui.setter.apiurl+'/sys/menu/list',
+      done:function(r){
+
+        // layui.cache.menutree = admin.events.totree(r.data)
+        layui.cache.menulist =r.data
+
+      
+      }
+    })
+  }
+
+  form.on('submit(searchrole)',function(data){
+    
+    table.reloadData('roletable',{where:data.field,page:{curr:1}});
+
+    return false;
+  })
+  table.on('toolbar(lfrole)', function(obj){
+    var id = obj.config.id;
+    var checkStatus = table.checkStatus(id);
+    var othis = lay(this);
+    switch(obj.event){
+      case 'add':
+        // var data = checkStatus.data;
+        // layer.alert(layui.util.escape(JSON.stringify(data)));
+        admin.popup({
+          id: 'addrole'
+          ,title:'添加角色'
+          ,area:admin.screen() < 2 ? ['100%', '100%'] : ['800px', '600px']
+          ,success: function(l,i){
+            view(this.id).render('/sys/role/add').done(function(){
+              form.on('submit(addrole)', function(data){
+                  admin.req({
+                    url:layui.setter.apiurl+'/sys/role/add'
+                    ,type:'post'
+                    ,data:data.field
+                    ,done:function(r){
+                      layer.msg('添加成功',{time:1000},function(){
+                        if(layui.cache.rolelist){
+                          delete layui.cache.rolelist;
+                        }
+                        table.reloadData('roletable',{page:{curr:1}});
+                        layer.close(i);
+                      })
+                    }
+                  })
+                return false;
+              });
+            });
+          }
+        })
+      break;
+    }
+  })
+  table.on('tool(lfrole)', function(obj){ // 注：test 是 table 原始标签的属性 lay-filter="对应的值"
+    var data = obj.data; //获得当前行数据
+    var layEvent = obj.event; //获得 lay-event 对应的值（也可以是表头的 event 参数对应的值）
+    var tr = obj.tr; //获得当前行 tr 的 DOM 对象（如果有的话）
+   
+    if(layEvent === 'auth'){ //删除
+      admin.popup({
+        id: 'rolenodes'
+        ,title:'权限设定'
+        ,area:admin.screen() < 2 ? ['100%', '100%'] : ['380px', '600px']
+        ,success: function(l,i){
+          view(this.id).render('sys/role/nodes',data.id);
+        }
+      })
+    
+   
+    }else if(layEvent === 'more'){
+      //下拉菜单
+      dropdown.render({
+        elem: this //触发事件的 DOM 对象
+        ,show: true //外部事件触发即显示
+        ,data: [{
+          title: '编辑'
+          ,id: 'edit'
+        },{
+          title: '详细权限'
+          ,id: 'auth'
+        },{
+          title: '用户'
+          ,id: 'user'
+        },{
+          title: '删除'
+          ,id: 'del'
+        }]
+        ,click: function(menudata){
+          if(menudata.id === 'del'){
+            layer.confirm('确定删除吗？', function(index){
+        
+              admin.req({
+                url:layui.setter.apiurl+'/sys/role/delete'
+                ,type:'delete'
+                ,data:{ids:data.id}
+                ,done:function(r){
+                  layer.msg(r.msg);
+                  if(r.msg=='ok'){
+                    table.reloadData('roletable',{page:{curr:1}});
+                    layer.close(index);
+                  }
+                }
+              })
+             
+            });
+          } else if(menudata.id === 'edit'){
+             admin.popup({
+              id: 'editrole'
+              ,title:'编辑角色'
+              ,area:admin.screen() < 2 ? ['100%', '100%'] : ['800px', '600px']
+              ,success: function(l,i){
+                view(this.id).render('sys/role/edit',data);
+              }
+            })
+          }else if(menudata.id === 'auth'){
+             admin.popup({
+              id: 'role_auth_more'
+              ,title:'详细权限'
+              ,area: ['100%', '100%'] 
+              ,success: function(l,i){
+                view(this.id).render('sys/role/authmore',data.id);
+              }
+            })
+          }
+        }
+        ,align: 'right' //右对齐弹出
+        ,style: 'box-shadow: 1px 1px 10px rgb(0 0 0 / 12%);' //设置额外样式
+      })
+    }
+  });
+
+
+   
+
+
+  
+});
+</script>

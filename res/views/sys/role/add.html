@@ -1,0 +1,63 @@
+
+
+<style>
+/* 这段样式只是用于演示 */
+.layui-layer-page .layui-layer-content {
+    background-color: #fafafa!important;
+    color: #5f5f5f!important;
+  }
+</style>
+
+<div class="layui-fluid layui-bg-gray" style="padding:0;">
+  <div class="layui-panel">
+    <div style="padding:10px;">
+      <form class="layui-form layui-form-pane" action="">
+        <div class="layui-form-item">
+          <label class="layui-form-label">角色名称</label>
+          <div class="layui-input-block">
+            <input type="text" name="name" autocomplete="off" lay-verify="required" lay-reqtext="用户名是必填项，岂能为空？" placeholder="" class="layui-input">
+          </div>
+        </div>
+        
+        <div class="layui-form-item">
+          <label class="layui-form-label">角色排序</label>
+          <div class="layui-input-block">
+            <input type="number" name="sort" autocomplete="off" placeholder="" class="layui-input">
+          </div>
+        </div>
+        <div class="layui-form-item" pane="">
+          <label class="layui-form-label">角色状态</label>
+          <div class="layui-input-block">
+            <input type="radio" name="status" value="1" title="开启" checked="">
+            <input type="radio" name="status" value="0" title="停用">
+            
+          </div>
+        </div>
+        <div class="layui-form-item layui-form-text">
+          <label class="layui-form-label">备注</label>
+          <div class="layui-input-block">
+            <textarea placeholder="请输入内容" name="remark" class="layui-textarea"></textarea>
+          </div>
+        </div>
+        <div class="layui-form-item">
+          <button class="layui-btn" lay-submit="" lay-filter="addrole">保存</button>
+        </div>
+      </form>
+    </div>
+  </div> 
+</div>
+
+<script>
+layui.use(['admin'], function(){
+  var $ = layui.$
+  ,admin = layui.admin
+  ,element = layui.element
+  ,form=layui.form
+  ,router = layui.router();
+  form.render();
+  
+
+
+  
+});
+</script>

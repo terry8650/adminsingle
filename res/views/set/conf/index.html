@@ -1,0 +1,202 @@
+
+<title>参数设置</title>
+
+<div class="layui-card layadmin-header">
+  <div class="layui-breadcrumb" lay-filter="breadcrumb">
+    <a lay-href="">主页</a>
+    <a><cite>系统设置</cite></a>
+    <a><cite>参数设置</cite></a>
+  </div>
+</div>
+
+<style>
+/* 这段样式只是用于演示 */
+
+</style>
+
+<div class="layui-fluid">
+  <div class="layui-row layui-col-space15">
+    <div class="layui-col-md12">
+      <div class="layui-card">
+        <div class="layui-card-header">参数列表</div>
+        <div class="layui-card-body">
+         
+        
+            <div class="layui-row layui-col-space5" >
+              
+              <div  class="layui-col-md3">
+                <input type="text" name="name" lay-fun="conf_search" placeholder="过滤参数" autocomplete="off" class="layui-input">
+              </div>
+           
+              <div  class="layui-col-md-offset1 layui-col-md5">
+               
+                <span  class="layui-btn" lay-event="add">
+                  <i class="layui-icon">&#xe608;</i>新建
+                </span>
+                <span  class="layui-btn" lay-event="del">
+                  <i class="layui-icon">&#x1006;</i>删除
+                </span>
+              </div>
+              
+
+            
+            </div>
+
+            <div class="layui-row">
+               <table class="layui-hide" id="conftable" lay-filter="lfconf"></table>
+                <script type="text/html" id="confbar">
+                  <a class="layui-btn layui-btn-primary layui-btn-xs" lay-event="edit">编辑</a>
+                  <a class="layui-btn layui-btn-xs" lay-event="del">删除 </a>
+                </script>
+            </div>
+         
+          
+          
+          
+        </div>
+      </div>
+    </div>
+   
+  </div>
+</div>
+
+<script>
+layui.use(['admin'], function(){
+  var $ = layui.$
+  ,admin = layui.admin
+  ,element = layui.element,table=layui.table,view=layui.view,form=layui.form,util=layui.util
+  ,router = layui.router(),confdata=[];
+  admin.req({
+    url:layui.setter.apiurl+'/sys/conf/list'
+    ,done:function(r){
+      confdata=r.data.data;
+      table.render({
+        elem:"#conftable"
+        ,data:confdata
+ 
+        ,cols:[[
+          {type: 'checkbox'}
+          ,{field: 'id', title: 'ID', width: 80, sort: true}
+          ,{field: 'name', title: '参数名', width: 120}
+          ,{field: 'val', title: '值', minWidth: 150}
+          ,{title: '操作', width: 150, align:'center', toolbar: '#confbar'}
+          ]]
+        ,page:false
+        ,limit:500
+        
+
+      })
+    }
+  })
+
+
+  util.on("lay-event",{
+  
+  
+      add:function(){
+
+        admin.popup({
+          id: 'addconf'
+          ,title:'添加参数'
+          ,area:admin.screen() < 2 ? ['100%', '100%'] : ['800px', '600px']
+          ,success: function(l,i){
+            view(this.id).render('/set/conf/add').done(function(){
+              form.on('submit(addconf)', function(data){
+                  admin.req({
+                    url:layui.setter.apiurl+'/sys/conf/add'
+                    ,type:'post'
+                    ,data:data.field
+                    ,done:function(r){
+                      layer.msg(r.msg,{time:1000},function(){
+                        admin.events.refresh();
+                      })
+                    }
+                  })
+                return false;
+              });
+            });
+          }
+        })
+      },
+      del:function(){
+
+          
+         var ids=[],checkStatus = table.checkStatus("conftable");
+ 
+      
+        layui.each(checkStatus.data,function(i,v){
+          ids.push(v.id);
+        })
+        if (ids.length>0) {
+          layer.confirm('确定删除吗？', function(index){
+          
+            admin.req({
+              url:layui.setter.apiurl+'/sys/conf/delete'
+              ,data:{ids:ids}
+              ,type:'delete'
+              ,done:function(r){
+                layer.msg(r.msg,{time:1000},function(){
+                  admin.events.refresh();
+                })
+              }
+            })
+          })
+        }else{
+          layer.msg('没选');
+        }
+      
+    }
+  });
+  table.on('tool(lfconf)', function(obj){ // 注：test 是 table 原始标签的属性 lay-filter="对应的值"
+    var data = obj.data; //获得当前行数据
+    var layEvent = obj.event; //获得 lay-event 对应的值（也可以是表头的 event 参数对应的值）
+    var tr = obj.tr; //获得当前行 tr 的 DOM 对象（如果有的话）
+   
+    if(layEvent === 'del'){ //删除
+      layer.confirm('确定删除吗？', function(index){
+        
+        admin.req({
+          url:layui.setter.apiurl+'/sys/conf/delete'
+          ,type:'delete'
+          ,data:{ids:data.id}
+          ,done:function(r){
+            layer.msg(r.msg,{time:1000},function(){
+              admin.events.refresh();
+            });
+            
+          }
+        })
+       
+      });
+    } else if(layEvent === 'edit'){ //编辑
+       admin.popup({
+        id: 'editpost'
+        ,title:'编辑参数'
+        ,area:admin.screen() < 2 ? ['100%', '100%'] : ['800px', '600px']
+        ,success: function(l,i){
+          view(this.id).render('/set/conf/edit',data);
+        }
+      })
+      
+    }
+  });
+
+  util.on('lay-fun',{
+    conf_search:function(elem){
+    
+      var search=[],d=$(elem).val();
+   
+      layui.each(confdata,function(i,v){
+        if(v.name.indexOf(d)!==-1)
+          search.push(v);
+      })
+      table.reload("conftable",{data:search});
+
+    }
+
+  },'input')
+ 
+
+  
+});
+</script>
